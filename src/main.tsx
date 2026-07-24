@@ -9,7 +9,7 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>
 );
 
-// Load EasyChatWidget after the app mounts to avoid it blocking initial render.
+// Load EasyChatWidget only after the user interacts to ensure the app UI renders first.
 function loadEasyChat() {
   // Don't add twice
   if (document.querySelector('script[data-widget-id="o3dhIXGMNjpzq0VkSYAkv1i93viILbgL"]')) return;
@@ -20,19 +20,12 @@ function loadEasyChat() {
   document.body.appendChild(s);
 }
 
-// Delay slightly so the React app can render first. Also load on first user interaction as a fallback.
-const EASYCHAT_DELAY_MS = 800;
-let easyChatTimeout = window.setTimeout(loadEasyChat, EASYCHAT_DELAY_MS);
-
 function onFirstInteraction() {
-  if (easyChatTimeout) {
-    clearTimeout(easyChatTimeout);
-    easyChatTimeout = 0 as unknown as number;
-  }
   loadEasyChat();
   window.removeEventListener("pointerdown", onFirstInteraction);
   window.removeEventListener("keydown", onFirstInteraction);
 }
 
+// Only load after first user interaction to avoid the widget taking focus or blocking the initial render.
 window.addEventListener("pointerdown", onFirstInteraction, { once: true });
 window.addEventListener("keydown", onFirstInteraction, { once: true });
