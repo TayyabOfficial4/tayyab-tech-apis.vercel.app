@@ -48,10 +48,13 @@ const colorMap: Record<string, string> = {
 
 export function Features() {
   return (
-    <section className="py-20 px-6">
+    <section aria-labelledby="features-heading" className="py-20 px-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+          <h2
+            id="features-heading"
+            className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white"
+          >
             Why Developers Love Us
           </h2>
           <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
@@ -65,8 +68,8 @@ export function Features() {
               key={f.title}
               className="bento-card bg-white dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700/50"
             >
-              <div className={`feature-icon ${colorMap[f.color]} mb-4`}>
-                <i className={`fas ${f.icon} text-xl`} />
+              <div className={`feature-icon ${colorMap[f.color]} mb-4`} aria-hidden="true">
+                <i className={`fas ${f.icon} text-xl`} aria-hidden="true" />
               </div>
               <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
                 {f.title}

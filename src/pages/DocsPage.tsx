@@ -133,10 +133,43 @@ function ApiTestModal({
   const [responseType, setResponseType] = useState<'json' | 'text' | 'image' | 'audio' | 'video' | 'other'>('json')
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
   const blobUrlRef = useRef<string | null>(null)
+  const dialogRef = useRef<HTMLDivElement | null>(null)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
     return () => {
       if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current)
+    }
+  }, [])
+
+  // Focus management: move focus into the dialog on open, restore it on close,
+  // and trap Tab within the dialog while it is open.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    closeButtonRef.current?.focus()
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const dialog = dialogRef.current
+      if (!dialog) return
+      const focusables = dialog.querySelectorAll<HTMLElement>(
+        'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])'
+      )
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      previouslyFocused?.focus()
     }
   }, [])
 
@@ -228,40 +261,61 @@ function ApiTestModal({
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="api-test-modal-title"
+        aria-describedby="api-test-modal-desc"
         className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-2xl rounded-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-3 p-5 border-b border-gray-200 dark:border-gray-700">
           <div className="min-w-0 flex-1">
-            <h3 className="text-base font-semibold truncate text-gray-900 dark:text-white">
+            <h3
+              id="api-test-modal-title"
+              className="text-base font-semibold truncate text-gray-900 dark:text-white"
+            >
               {endpoint.name}
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            <p
+              id="api-test-modal-desc"
+              className="text-xs text-gray-500 dark:text-gray-400 truncate"
+            >
               {endpoint.desc}
             </p>
           </div>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
+            aria-label="Close dialog"
             className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
           >
-            <i className="fas fa-times text-gray-500" />
+            <i className="fas fa-times text-gray-500" aria-hidden="true" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Method + URL */}
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
+            <span
+              id="request-label"
+              className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block"
+            >
               Request
-            </label>
+            </span>
             <div className="flex items-stretch gap-2">
-              <div className="method-toggle flex-shrink-0">
+              <div
+                className="method-toggle flex-shrink-0"
+                role="group"
+                aria-label="HTTP method"
+              >
                 <button
                   type="button"
                   className={method === 'GET' ? 'active' : ''}
+                  aria-pressed={method === 'GET'}
                   onClick={() => setMethod('GET')}
                 >
                   GET
@@ -269,12 +323,16 @@ function ApiTestModal({
                 <button
                   type="button"
                   className={method === 'POST' ? 'active' : ''}
+                  aria-pressed={method === 'POST'}
                   onClick={() => setMethod('POST')}
                 >
                   POST
                 </button>
               </div>
-              <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 font-mono text-xs overflow-x-auto">
+              <div
+                className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 font-mono text-xs overflow-x-auto"
+                aria-labelledby="request-label"
+              >
                 <span className="text-gray-700 dark:text-gray-300 whitespace-nowrap">
                   {fullUrl}
                 </span>
@@ -284,10 +342,10 @@ function ApiTestModal({
 
           {/* Parameters */}
           {params.length > 0 && (
-            <div>
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
+            <fieldset>
+              <legend className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
                 Parameters
-              </label>
+              </legend>
               <div className="space-y-2">
                 {params.map((p) => (
                   <div
@@ -295,9 +353,12 @@ function ApiTestModal({
                     className="flex flex-col sm:flex-row sm:items-center gap-2"
                   >
                     <div className="flex items-center gap-2 sm:w-40 flex-shrink-0">
-                      <span className="font-mono text-xs text-gray-900 dark:text-white">
+                      <label
+                        htmlFor={`param-${p.name}`}
+                        className="font-mono text-xs text-gray-900 dark:text-white"
+                      >
                         {p.name}
-                      </span>
+                      </label>
                       {p.required ? (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-medium">
                           required
@@ -310,7 +371,10 @@ function ApiTestModal({
                     </div>
                     <input
                       type="text"
+                      id={`param-${p.name}`}
                       placeholder={`Enter ${p.name}...`}
+                      required={p.required}
+                      aria-required={p.required}
                       value={paramValues[p.name] || ''}
                       onChange={(e) =>
                         setParamValues((prev) => ({ ...prev, [p.name]: e.target.value }))
@@ -320,16 +384,20 @@ function ApiTestModal({
                   </div>
                 ))}
               </div>
-            </div>
+            </fieldset>
           )}
 
           {/* Body for POST */}
           {method === 'POST' && (
             <div>
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
+              <label
+                htmlFor="request-body"
+                className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block"
+              >
                 Request Body (JSON)
               </label>
               <textarea
+                id="request-body"
                 value={bodyText}
                 onChange={(e) => setBodyText(e.target.value)}
                 rows={5}
@@ -346,23 +414,27 @@ function ApiTestModal({
           >
             {loading ? (
               <>
-                <span className="loader-spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+                <span
+                  className="loader-spinner"
+                  style={{ width: 14, height: 14, borderWidth: 2 }}
+                  aria-hidden="true"
+                />
                 Sending...
               </>
             ) : (
               <>
-                <i className="fas fa-paper-plane" /> Send Request
+                <i className="fas fa-paper-plane" aria-hidden="true" /> Send Request
               </>
             )}
           </button>
 
           {/* Response */}
           {(response || error) && (
-            <div>
+            <div aria-live="polite">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Response
-                </label>
+                </span>
                 <div className="flex items-center gap-2">
                   {responseTime !== null && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -381,12 +453,13 @@ function ApiTestModal({
                   {response && (
                     <button
                       onClick={handleCopy}
+                      aria-label={copied ? 'Response copied' : 'Copy response to clipboard'}
                       className="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
                     >
                       {copied ? (
-                        <i className="fas fa-check text-green-500" />
+                        <i className="fas fa-check text-green-500" aria-hidden="true" />
                       ) : (
-                        <i className="fas fa-copy" />
+                        <i className="fas fa-copy" aria-hidden="true" />
                       )}
                     </button>
                   )}
@@ -396,23 +469,37 @@ function ApiTestModal({
                 <div className="mb-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                   <img
                     src={blobUrl}
-                    alt="Response"
+                    alt={`Image returned by the ${endpoint.name} endpoint`}
                     className="max-w-full max-h-80 mx-auto"
                   />
                 </div>
               )}
               {responseType === 'audio' && blobUrl && (
                 <div className="mb-2">
-                  <audio controls src={blobUrl} className="w-full" />
+                  <audio
+                    controls
+                    src={blobUrl}
+                    className="w-full"
+                    aria-label={`Audio returned by the ${endpoint.name} endpoint`}
+                  />
                 </div>
               )}
               {responseType === 'video' && blobUrl && (
                 <div className="mb-2">
-                  <video controls src={blobUrl} className="w-full max-h-80 rounded-lg" />
+                  <video
+                    controls
+                    src={blobUrl}
+                    className="w-full max-h-80 rounded-lg"
+                    aria-label={`Video returned by the ${endpoint.name} endpoint`}
+                  />
                 </div>
               )}
               {response && (
-                <pre className="p-3 rounded-lg bg-gray-900 text-gray-100 text-xs font-mono overflow-x-auto max-h-72 overflow-y-auto">
+                <pre
+                  tabIndex={0}
+                  aria-label="API response body"
+                  className="p-3 rounded-lg bg-gray-900 text-gray-100 text-xs font-mono overflow-x-auto max-h-72 overflow-y-auto"
+                >
                   {error ? (
                     <span className="text-red-400">{error}</span>
                   ) : (
@@ -518,8 +605,8 @@ export function DocsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a1a] text-gray-900 dark:text-white flex items-center justify-center transition-colors duration-300">
-        <div className="flex flex-col items-center gap-4">
-          <div className="loader-spinner" />
+        <div className="flex flex-col items-center gap-4" role="status">
+          <div className="loader-spinner" aria-hidden="true" />
           <p className="text-sm text-gray-500 dark:text-gray-400">Loading API docs...</p>
         </div>
       </div>
@@ -529,8 +616,8 @@ export function DocsPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a1a] text-gray-900 dark:text-white flex items-center justify-center">
-        <div className="text-center">
-          <i className="fas fa-circle-exclamation text-5xl text-red-500 mb-4" />
+        <div className="text-center" role="alert">
+          <i className="fas fa-circle-exclamation text-5xl text-red-500 mb-4" aria-hidden="true" />
           <p className="text-gray-600 dark:text-gray-400 mb-4">Failed to load API data</p>
           <button
             onClick={() => window.location.reload()}
@@ -545,19 +632,28 @@ export function DocsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a1a] text-gray-900 dark:text-gray-100 transition-colors duration-300">
+      <a href="#docs-content" className="skip-link">
+        Skip to main content
+      </a>
       {/* Top Nav */}
-      <nav className="fixed top-0 w-full z-40 bg-white/80 dark:bg-[#0a0a1a]/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
+      <nav
+        aria-label="Documentation navigation"
+        className="fixed top-0 w-full z-40 bg-white/80 dark:bg-[#0a0a1a]/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800"
+      >
         <div className="flex items-center justify-between px-4 md:px-6 h-16">
           <div className="flex items-center gap-4">
             <button
               className="lg:hidden w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? 'Close categories menu' : 'Open categories menu'}
+              aria-expanded={sidebarOpen}
+              aria-controls="docs-sidebar"
             >
-              <i className="fas fa-bars text-gray-600 dark:text-gray-400" />
+              <i className="fas fa-bars text-gray-600 dark:text-gray-400" aria-hidden="true" />
             </button>
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
-                <i className="fas fa-code text-white text-sm" />
+            <Link to="/" className="flex items-center gap-2" aria-label={`${BRAND} APIs — Home`}>
+              <div className="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center" aria-hidden="true">
+                <i className="fas fa-code text-white text-sm" aria-hidden="true" />
               </div>
               <span className="text-lg font-bold text-gray-900 dark:text-white">
                 {BRAND} APIs
@@ -569,18 +665,25 @@ export function DocsPage() {
           </div>
 
           {/* Desktop search */}
-          <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
+          <div className="hidden md:flex items-center flex-1 max-w-md mx-8" role="search">
             <div className="relative w-full">
-              <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+              <i
+                className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"
+                aria-hidden="true"
+              />
               <input
                 type="text"
                 id="api-search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search APIs"
                 className="w-full pl-10 pr-12 py-2.5 text-sm bg-gray-100 dark:bg-gray-800 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 transition-all"
                 placeholder="Search APIs... (Ctrl+K)"
               />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+              <kbd
+                aria-hidden="true"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded"
+              >
                 ⌘K
               </kbd>
             </div>
@@ -590,10 +693,11 @@ export function DocsPage() {
             <button
               onClick={toggleTheme}
               className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Toggle theme"
+              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              aria-pressed={theme === 'dark'}
             >
-              <i className="fas fa-moon text-gray-600 dark:hidden" />
-              <i className="fas fa-sun text-yellow-400 hidden dark:block" />
+              <i className="fas fa-moon text-gray-600 dark:hidden" aria-hidden="true" />
+              <i className="fas fa-sun text-yellow-400 hidden dark:block" aria-hidden="true" />
             </button>
             <a
               href="https://t.me/TayyabTech"
@@ -601,14 +705,15 @@ export function DocsPage() {
               rel="noopener noreferrer"
               className="hidden sm:flex w-9 h-9 rounded-lg items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               title="Telegram"
+              aria-label="Contact us on Telegram (opens in a new tab)"
             >
-              <i className="fab fa-telegram text-gray-600 dark:text-gray-400" />
+              <i className="fab fa-telegram text-gray-600 dark:text-gray-400" aria-hidden="true" />
             </a>
             <Link
               to="/"
               className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium gradient-bg text-white rounded-lg hover:opacity-90 transition-opacity"
             >
-              <i className="fas fa-home text-xs" /> Home
+              <i className="fas fa-home text-xs" aria-hidden="true" /> Home
             </Link>
           </div>
         </div>
@@ -620,24 +725,31 @@ export function DocsPage() {
           <div
             className="fixed inset-0 z-30 bg-black/50 lg:hidden"
             onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
           />
         )}
 
         {/* Sidebar */}
         <aside
+          id="docs-sidebar"
+          aria-label="API categories"
           className={`fixed lg:sticky top-16 z-30 h-[calc(100vh-4rem)] w-64 bg-white dark:bg-[#0f0f23] border-r border-gray-200 dark:border-gray-800 overflow-y-auto scrollbar-thin transform transition-transform duration-300 ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
         >
           <div className="p-4">
             {/* Mobile search */}
-            <div className="lg:hidden mb-4">
+            <div className="lg:hidden mb-4" role="search">
               <div className="relative">
-                <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                <i
+                  className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"
+                  aria-hidden="true"
+                />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  aria-label="Search APIs"
                   className="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
                   placeholder="Search APIs..."
                 />
@@ -647,7 +759,7 @@ export function DocsPage() {
             {/* Stats */}
             <div className="mb-6 p-3 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl border border-blue-100 dark:border-blue-800/30">
               <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
                 <span className="text-xs font-medium text-green-700 dark:text-green-400">
                   All Systems Operational
                 </span>
@@ -660,10 +772,13 @@ export function DocsPage() {
               </p>
             </div>
 
-            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">
+            <p
+              id="sidebar-categories-label"
+              className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-2"
+            >
               Categories
             </p>
-            <nav className="space-y-1">
+            <nav aria-labelledby="sidebar-categories-label" className="space-y-1">
               {filteredCategories.map((cat) => (
                 <button
                   key={cat.name}
@@ -671,17 +786,19 @@ export function DocsPage() {
                     setActiveCategory(cat.name)
                     setSidebarOpen(false)
                   }}
+                  aria-label={`Jump to ${cat.name} category, ${cat.items.length} endpoints`}
                   className="w-full flex items-center gap-2.5 px-2 py-2 text-sm text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
                 >
                   <span
                     className={`w-7 h-7 rounded-md bg-gradient-to-br ${pickColor(
                       cat.name
                     )} flex items-center justify-center text-white flex-shrink-0`}
+                    aria-hidden="true"
                   >
-                    <i className={`fas ${pickIcon(cat.name)} text-xs`} />
+                    <i className={`fas ${pickIcon(cat.name)} text-xs`} aria-hidden="true" />
                   </span>
                   <span className="flex-1 truncate font-medium">{cat.name}</span>
-                  <span className="text-xs text-gray-400 dark:text-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400" aria-hidden="true">
                     {cat.items.length}
                   </span>
                 </button>
@@ -691,7 +808,7 @@ export function DocsPage() {
         </aside>
 
         {/* Main */}
-        <main className="flex-1 lg:ml-64 min-h-screen">
+        <main id="docs-content" className="flex-1 lg:ml-64 min-h-screen">
           <div className="p-6 md:p-8 max-w-6xl mx-auto">
             {/* Header */}
             <div className="mb-8 p-6 md:p-8 bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm">
@@ -729,6 +846,13 @@ export function DocsPage() {
               </div>
             </div>
 
+            {/* Screen-reader announcement of search results */}
+            <p className="sr-only" role="status" aria-live="polite">
+              {searchQuery.trim()
+                ? `${filteredCategories.reduce((a, c) => a + c.items.length, 0)} endpoints found in ${filteredCategories.length} categories`
+                : ''}
+            </p>
+
             {/* Categories */}
             <div className="space-y-10">
               {filteredCategories.map((cat) => (
@@ -742,8 +866,9 @@ export function DocsPage() {
                       className={`w-10 h-10 rounded-lg bg-gradient-to-br ${pickColor(
                         cat.name
                       )} flex items-center justify-center text-white shadow-sm`}
+                      aria-hidden="true"
                     >
-                      <i className={`fas ${pickIcon(cat.name)}`} />
+                      <i className={`fas ${pickIcon(cat.name)}`} aria-hidden="true" />
                     </span>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -761,7 +886,16 @@ export function DocsPage() {
                       return (
                         <div
                           key={idx}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${item.name} — ${item.desc}. Open API tester`}
                           onClick={() => setSelectedEndpoint(item)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              setSelectedEndpoint(item)
+                            }
+                          }}
                           className="group p-4 rounded-xl border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-gray-800/50 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer"
                         >
                           <div className="flex items-start justify-between gap-2 mb-2">
@@ -776,7 +910,7 @@ export function DocsPage() {
                             {item.desc}
                           </p>
                           <div className="flex items-center justify-between">
-                            <code className="text-[11px] text-gray-400 dark:text-gray-500 font-mono truncate max-w-[70%]">
+                            <code className="text-[11px] text-gray-500 dark:text-gray-400 font-mono truncate max-w-[70%]">
                               /api{basePath}
                             </code>
                             <div className="flex items-center gap-1.5">
@@ -787,8 +921,9 @@ export function DocsPage() {
                                 }}
                                 className="p-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                                 title="Test endpoint"
+                                aria-label={`Test ${item.name} endpoint`}
                               >
-                                <i className="fas fa-play text-[10px]" />
+                                <i className="fas fa-play text-[10px]" aria-hidden="true" />
                               </button>
                               <button
                                 onClick={(e) => {
@@ -797,8 +932,9 @@ export function DocsPage() {
                                 }}
                                 className="p-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                                 title="Copy URL"
+                                aria-label={`Copy ${item.name} endpoint URL to clipboard`}
                               >
-                                <i className="fas fa-copy text-[10px]" />
+                                <i className="fas fa-copy text-[10px]" aria-hidden="true" />
                               </button>
                             </div>
                           </div>
@@ -810,8 +946,11 @@ export function DocsPage() {
               ))}
 
               {filteredCategories.length === 0 && (
-                <div className="text-center py-20">
-                  <i className="fas fa-search text-5xl text-gray-300 dark:text-gray-700 mb-4" />
+                <div className="text-center py-20" role="status">
+                  <i
+                    className="fas fa-search text-5xl text-gray-300 dark:text-gray-700 mb-4"
+                    aria-hidden="true"
+                  />
                   <p className="text-gray-500 dark:text-gray-400">
                     No endpoints found for "{searchQuery}"
                   </p>
@@ -825,7 +964,8 @@ export function DocsPage() {
             <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 &copy; {new Date().getFullYear()} {BRAND} APIs. Made with{' '}
-                <i className="fas fa-heart text-red-500" /> by {BRAND}.
+                <i className="fas fa-heart text-red-500" aria-hidden="true" />
+                <span className="sr-only">love</span> by {BRAND}.
               </span>
               <Link
                 to="/"
