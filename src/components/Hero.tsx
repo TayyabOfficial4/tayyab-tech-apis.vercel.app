@@ -51,13 +51,6 @@ export function Hero() {
       />
 
       <div className="relative z-10 text-center max-w-4xl mx-auto">
-        <div className="animate-fade-up">
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 mb-6">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" aria-hidden="true" />
-            v2.0 — Free developer APIs, no key required
-          </span>
-        </div>
-
         <h1
           id="hero-heading"
           className="text-5xl sm:text-6xl md:text-7xl font-black leading-tight mb-6 text-gray-900 dark:text-white animate-fade-up delay-100"
