@@ -26,31 +26,42 @@ export function Hero() {
   }, [])
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-20 px-6 overflow-hidden">
+    <section
+      aria-labelledby="hero-heading"
+      className="relative min-h-screen flex items-center justify-center pt-20 px-6 overflow-hidden"
+    >
       {/* Background Glows */}
-      <div className="hero-glow bg-blue-500 top-20 -left-40" />
-      <div className="hero-glow bg-cyan-400 bottom-20 -right-40" />
+      <div className="hero-glow bg-blue-500 top-20 -left-40" aria-hidden="true" />
+      <div className="hero-glow bg-cyan-400 bottom-20 -right-40" aria-hidden="true" />
 
       {/* Floating elements */}
-      <div className="absolute top-32 left-10 w-16 h-16 rounded-2xl gradient-bg opacity-20 animate-float hidden md:block" />
+      <div
+        className="absolute top-32 left-10 w-16 h-16 rounded-2xl gradient-bg opacity-20 animate-float hidden md:block"
+        aria-hidden="true"
+      />
       <div
         className="absolute bottom-32 right-20 w-12 h-12 rounded-xl bg-blue-400 opacity-20 animate-float hidden md:block"
         style={{ animationDelay: '2s' }}
+        aria-hidden="true"
       />
       <div
         className="absolute top-1/2 right-10 w-8 h-8 rounded-lg bg-cyan-400 opacity-20 animate-float hidden md:block"
         style={{ animationDelay: '4s' }}
+        aria-hidden="true"
       />
 
       <div className="relative z-10 text-center max-w-4xl mx-auto">
         <div className="animate-fade-up">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 mb-6">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" aria-hidden="true" />
             v2.0 — Free developer APIs, no key required
           </span>
         </div>
 
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-black leading-tight mb-6 text-gray-900 dark:text-white animate-fade-up delay-100">
+        <h1
+          id="hero-heading"
+          className="text-5xl sm:text-6xl md:text-7xl font-black leading-tight mb-6 text-gray-900 dark:text-white animate-fade-up delay-100"
+        >
           Build Faster with<br />
           <span className="gradient-text">Tayyab Tech APIs</span>
         </h1>
@@ -73,8 +84,11 @@ export function Hero() {
             to="/docs"
             className="group px-8 py-3.5 gradient-bg text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2"
           >
-            <i className="fas fa-rocket" /> Explore APIs
-            <i className="fas fa-arrow-right text-sm group-hover:translate-x-1 transition-transform" />
+            <i className="fas fa-rocket" aria-hidden="true" /> Explore APIs
+            <i
+              className="fas fa-arrow-right text-sm group-hover:translate-x-1 transition-transform"
+              aria-hidden="true"
+            />
           </Link>
           <a
             href="https://t.me/TayyabTech"
@@ -82,13 +96,15 @@ export function Hero() {
             rel="noopener noreferrer"
             className="px-8 py-3.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2 shadow-sm"
           >
-            <i className="fab fa-telegram" /> Contact Dev
+            <i className="fab fa-telegram" aria-hidden="true" /> Contact Dev
+            <span className="sr-only">(opens Telegram in a new tab)</span>
           </a>
         </div>
 
         {/* Quick Stats Row */}
         <div
           id="stats"
+          aria-label="Quick stats"
           className="flex flex-wrap justify-center gap-8 mt-12 animate-fade-up delay-400"
         >
           <div className="text-center">
@@ -97,17 +113,17 @@ export function Hero() {
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Endpoints</p>
           </div>
-          <div className="w-px h-12 bg-gray-200 dark:bg-gray-700 hidden sm:block" />
+          <div className="w-px h-12 bg-gray-200 dark:bg-gray-700 hidden sm:block" aria-hidden="true" />
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900 dark:text-white">Free</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Forever</p>
           </div>
-          <div className="w-px h-12 bg-gray-200 dark:bg-gray-700 hidden sm:block" />
+          <div className="w-px h-12 bg-gray-200 dark:bg-gray-700 hidden sm:block" aria-hidden="true" />
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900 dark:text-white">99.9%</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Uptime</p>
           </div>
-          <div className="w-px h-12 bg-gray-200 dark:bg-gray-700 hidden sm:block" />
+          <div className="w-px h-12 bg-gray-200 dark:bg-gray-700 hidden sm:block" aria-hidden="true" />
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900 dark:text-white">No Key</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Instant Use</p>

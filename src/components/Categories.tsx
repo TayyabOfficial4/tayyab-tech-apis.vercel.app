@@ -97,10 +97,13 @@ export function Categories() {
   }, [])
 
   return (
-    <section className="py-20 px-6">
+    <section aria-labelledby="categories-heading" className="py-20 px-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+          <h2
+            id="categories-heading"
+            className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white"
+          >
             Browse by Category
           </h2>
           <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
@@ -120,6 +123,9 @@ export function Categories() {
             Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
+                role={i === 0 ? 'status' : undefined}
+                aria-label={i === 0 ? 'Loading categories' : undefined}
+                aria-hidden={i === 0 ? undefined : 'true'}
                 className="h-24 rounded-2xl bg-gray-200/60 dark:bg-gray-800/60 animate-pulse"
               />
             ))}
@@ -130,20 +136,23 @@ export function Categories() {
                 key={cat.name}
                 to="/docs"
                 state={{ category: cat.name }}
+                aria-label={`${cat.name} — ${cat.items.length} endpoints. View documentation`}
                 className="group relative overflow-hidden rounded-2xl p-4 border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-gray-800/50 hover:border-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${pickColor(
                     cat.name
                   )} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                  aria-hidden="true"
                 />
                 <div className="relative z-10 flex flex-col gap-3">
                   <div
                     className={`w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br ${pickColor(
                       cat.name
                     )} text-white shadow-sm`}
+                    aria-hidden="true"
                   >
-                    <i className={`fas ${pickIcon(cat.name)} text-base`} />
+                    <i className={`fas ${pickIcon(cat.name)} text-base`} aria-hidden="true" />
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-white transition-colors line-clamp-1">
