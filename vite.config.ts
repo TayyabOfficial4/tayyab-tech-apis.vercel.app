@@ -23,7 +23,7 @@ export default defineConfig(async ({ mode }) => {
     define: processEnvDefines,
     server: {
       host: '0.0.0.0',
-      allowedHosts: true,
+      allowedHosts: true as const,
     },
   };
 })
